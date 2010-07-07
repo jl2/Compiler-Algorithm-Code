@@ -1,0 +1,15 @@
+Haskell implementation of some algorithms from Chapter 3 of the book
+"Compilers: Principles, Techniques, & Tools"
+
+Specifically:
+  Converts a regular expression into a non-deterministic finite automaton (NFA)
+  Tests whether an NFA accepts a string
+  Converts an NFA into a deterministic finite automaton (DFA)
+  Tests whether a DFA accepts a string
+  Converts an NFA or DFA into a format that can be visualized with the GraphViz tool dot
+
+At some point I may add code for other algorithms from the book.
+
+Right now it spits out a state transition diagram in "dot" format.
+
+Written by Jeremiah LaRocco
