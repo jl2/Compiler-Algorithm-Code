@@ -54,6 +54,15 @@ class PTConcatenation(ParseTree):
     def __str__(self):
         return '({})({})'.format(self.left, self.right)
 
+class PTCharSet(ParseTree):
+    def __init__(self, cset):
+        self.cset = cset
+
+    # ugly, but works
+    def __str__(self):
+        return '[{}]'.format(''.join(sorted(self.cset)))
+
+
 def parse(ins):
     
     return ParseTree()

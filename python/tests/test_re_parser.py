@@ -21,8 +21,6 @@ import unittest
 from re_parser import *
 
 class TestREParser(unittest.TestCase):
-    def setUp(self):
-        pass
 
     def testClosureStr(self):
         ac = PTChar('a')
@@ -42,17 +40,50 @@ class TestREParser(unittest.TestCase):
         cat = PTConcatenation(ac, bc)
         self.assertEqual(str(cat), '(a)(b)')
 
+    def testCharClassStr(self):
+        abc = PTCharSet({'a','b','c'})
+        self.assertEqual(str(abc), '[abc]')
+
     def testCharStr(self):
         ac = PTChar('a')
         self.assertEqual(str(ac), 'a')
 
+
     def testParseChar(self):
         pt = parse('a')
-        assertEqual(str(pt), 'a')
+        self.assertEqual(str(pt), 'a')
 
-    def testParseChars(self):
+    def testParseCharSet(self):
+        pt = parse('[a-z]')
+        self.assertEqual(str(pt), '[{}]'.format(''.join([chr(x) for x in range(ord('a'), ord('z')+1)])))
+
+    def testParseAlt(self):
+        pt = parse('a|b')
+        self.assertEqual(str(pt), '(a)|(b)')
+
+    def testParseConcat(self):
         pt = parse('ab')
-        assertEqual(str(pt), '(a)(b)')
+        self.assertEqual(str(pt), '(a)(b)')
+
+    def testParseClosure(self):
+        pt = parse('a*')
+        self.assertEqual(str(pt), '(a)*')
+
+    def testParseParens(self):
+        pt = parse('(a)')
+        self.assertEqual(str(pt), 'a')
+
+    def testParseAltConcat(self):
+        pt = parse('ab|cd')
+        self.assertEqual(str(pt), '((a)(b))|((c)(d))')
+
+    def testParseAltCharSet(self):
+        pt = parse('[a-d]|c*')
+        self.assertEqual(str(pt), '([abcd])|((c)*)')
+
+    def testParseNestedAlt(self):
+        pt = parse('(a|b)|(c|d)')
+        self.assertEqual(str(pt), '((a)|(b))|((c)|(d))')
 
 if __name__=='__main__':
     unittest.main()
