@@ -51,7 +51,7 @@ class PTConcatenation(ParseTree):
         self.right = right
 
     def __str__(self):
-        return '({})({})'.format(self.left, self.right)
+        return '{}{}'.format(self.left, self.right)
 
 class PTCharSet(ParseTree):
     def __init__(self, cset_str):
@@ -130,14 +130,15 @@ class ParserState(object):
         self.position += 1
 
     def __str__(self):
-        return '{} (position = {})'.format(self.string, self.position)
-        # return '{}->{}<-{} (position = {})'.format(self.string[0:self.position], self.string[self.position], self.string[self.position:], self.position)
+        # return '{} (position = {})'.format(self.string, self.position)
+        if self.position>= len(self.string): return '{}_'.format(self.string)
+        return '{}_{}'.format(self.string[0:self.position], self.string[self.position:])
 
 def debug_ps(targ):
     def wrapp(*args):
-        # print('{}({})'.format(targ.__name__, *args))
+        # print('{}({})'.format(targ.__name__, ','.join(str(arg) for arg in args)))
         res = targ(*args)
-        # print("{} got: {}".format(targ.__name__, res))
+        # print("{}({}) got: {}".format(targ.__name__, ','.join(str(arg) for arg in args), res))
         return res
         
     return wrapp
@@ -169,7 +170,13 @@ def R2(pstate):
     elif pstate.curToken() == PLUS:
         pstate.match('+')
         return PTConcatenation(pt, PTClosure(pt))
-    return pt
+
+    elif pstate.curToken() in [OTHER, LPAREN, LBRACK]:
+        return PTConcatenation(pt, F(pstate))
+
+    else:
+        return pt
+    
 
 @debug_ps
 def CC(pstate):
@@ -188,20 +195,26 @@ def F(pstate):
         pstate.match('[')
         rs = CC(pstate)
         pstate.match(']')
+        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
+            return PTConcatenation(rs, F(pstate))
         return rs
 
     elif ct == LPAREN:
         pstate.match('(')
         rs = R2(pstate)
         pstate.match(')')
+        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
+            return PTConcatenation(rs, F(pstate))
         return rs
 
     elif ct == OTHER:
         rv = PTChar(pstate.curChar())
         pstate.next()
-        if pstate.done:
-            return rv
-        return PTConcatenation(rv, F(pstate))
+        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
+            return PTConcatenation(rv, F(pstate))
+        return rv
+
+    raise RE_SyntaxError
     
 def parse(ins):
     ps = ParserState(ins)

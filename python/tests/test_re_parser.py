@@ -38,7 +38,7 @@ class TestREParser(unittest.TestCase):
         ac = PTChar('a')
         bc = PTChar('b')
         cat = PTConcatenation(ac, bc)
-        self.assertEqual(str(cat), '(a)(b)')
+        self.assertEqual(str(cat), 'ab')
 
     def testCharClassStr(self):
         abc = PTCharSet('a-c')
@@ -66,7 +66,7 @@ class TestREParser(unittest.TestCase):
 
     def testParseConcat(self):
         pt = parse('ab')
-        self.assertEqual(str(pt), '(a)(b)')
+        self.assertEqual(str(pt), 'ab')
 
     def testParseClosure(self):
         pt = parse('a*')
@@ -76,10 +76,6 @@ class TestREParser(unittest.TestCase):
         pt = parse('(a)')
         self.assertEqual(str(pt), 'a')
 
-    def testParseAltConcat(self):
-        pt = parse('ab|cd')
-        self.assertEqual(str(pt), '((a)(b))|((c)(d))')
-
     def testParseAltCharSet(self):
         pt = parse('[a-d]|c*')
         self.assertEqual(str(pt), '([abcd])|((c)*)')
@@ -87,6 +83,46 @@ class TestREParser(unittest.TestCase):
     def testParseNestedAlt(self):
         pt = parse('(a|b)|(c|d)')
         self.assertEqual(str(pt), '((a)|(b))|((c)|(d))')
+
+    def testParseAltConcat(self):
+        pt = parse('ab|cd')
+        self.assertEqual(str(pt), '(ab)|(cd)')
+
+    def testParseAltConcat2(self):
+        pt = parse('(ab)|(cd)')
+        self.assertEqual(str(pt), '(ab)|(cd)')
+
+    def testParseComplicated1(self):
+        pt = parse('[a-d][x-z]|(abc|def)')
+        self.assertEqual(str(pt), '([abcd][xyz])|((abc)|(def))')
+
+    def testParseComplicated2(self):
+        pt = parse('([abc]|[def]*)')
+        self.assertEqual(str(pt), '([abc])|(([def])*)')
+
+    def testParseComplicated3(self):
+        pt = parse('([abc]|[def]*)|abc')
+        self.assertEqual(str(pt), '(([abc])|(([def])*))|(abc)')
+
+    def testParseComplicated4(self):
+        pt = parse('([abc]|[def]*)|[a-d]')
+        self.assertEqual(str(pt), '(([abc])|(([def])*))|([abcd])')
+
+    def testParseComplicated4(self):
+        pt = parse('([abc]|[def]*)|[a-d]*')
+        self.assertEqual(str(pt), '(([abc])|(([def])*))|(([abcd])*)')
+
+    def testParseComplicated5(self):
+        pt = parse('(([abc]|[def]*)|[a-d]*)+')
+        self.assertEqual(str(pt), '(([abc])|(([def])*))|(([abcd])*)((([abc])|(([def])*))|(([abcd])*))*')
+
+    def testParseComplicated6(self):
+        pt = parse('a|b|c')
+        self.assertEqual(str(pt), '(a)|((b)|(c))')
+
+    def testParseComplicated7(self):
+        pt = parse('a|b*|c')
+        self.assertEqual(str(pt), '(a)|(((b)*)|(c))')
 
 if __name__=='__main__':
     unittest.main()
