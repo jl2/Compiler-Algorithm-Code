@@ -18,7 +18,7 @@
 
 class ParseTree(object):
     def __init__(self):
-        self.children = None
+        pass
 
     def __str__(self):
         return ''
@@ -26,7 +26,6 @@ class ParseTree(object):
 class PTChar(ParseTree):
     def __init__(self, val):
         self.val = val
-        self.children = None
 
     def __str__(self):
         return self.val
@@ -55,17 +54,158 @@ class PTConcatenation(ParseTree):
         return '({})({})'.format(self.left, self.right)
 
 class PTCharSet(ParseTree):
-    def __init__(self, cset):
-        self.cset = cset
+    def __init__(self, cset_str):
+        self.cset = set()
+        i = 0
+        while (i<len(cset_str)):
+            if i==0 and cset_str[i]=='-':
+                self.cset.add('-')
+
+            elif cset_str[i] == '-' and i==(len(cset_str)-1):
+                self.cset.add('-')
+            
+            elif cset_str[i] == '-':
+                first_val = ord(cset_str[i-1])
+                last_val = ord(cset_str[i+1])
+                self.cset = self.cset.union(chr(x) for x in range(first_val, last_val+1))
+                i+=1
+            else:
+                self.cset.add(cset_str[i])
+
+            i+=1
 
     # ugly, but works
     def __str__(self):
+        # return '{}'.format([x for x in self.cset])
         return '[{}]'.format(''.join(sorted(self.cset)))
 
+# Tokens:
+OTHER = 0
+LPAREN = 1
+RPAREN = 2
+LBRACK = 3
+RBRACK = 4
+ASTERIK = 5
+DASH = 6
+PLUS = 7
+BAR = 8
 
-def parse(ins):
+tokenTypes = {'(': LPAREN,
+              ')': RPAREN,
+              '[': LBRACK,
+              ']': RBRACK,
+              '+': PLUS,
+              '-': DASH,
+              '|': BAR,
+              '*': ASTERIK}
+
+def tokenFor(char):
+    global tokenTypes
+    return tokenTypes.get(char, OTHER)
+
+class RE_SyntaxError(Exception):
+    pass
+
+class ParserState(object):
+    def __init__(self, ins):
+        self.string = ins
+        self.position = 0
+
+    def match(self, char):
+        if self.curChar() == char:
+            self.position += 1
+            return True
+        raise RE_SyntaxError
+
+    def curChar(self):
+        return self.string[self.position]
+
+    def curToken(self):
+        return tokenFor(self.curChar())
+
+    def done(self):
+        return self.position == len(self.string)
+
+    def next(self):
+        self.position += 1
+
+    def __str__(self):
+        return '{} (position = {})'.format(self.string, self.position)
+        # return '{}->{}<-{} (position = {})'.format(self.string[0:self.position], self.string[self.position], self.string[self.position:], self.position)
+
+def debug_ps(targ):
+    def wrapp(*args):
+        # print('{}({})'.format(targ.__name__, *args))
+        res = targ(*args)
+        # print("{} got: {}".format(targ.__name__, res))
+        return res
+        
+    return wrapp
+
+
+@debug_ps
+def R(pstate):
+    if pstate.done(): return None
+    r2, r1 = R2(pstate), R(pstate)
+    if r1:
+        return PTConcatenation(r2, r1)
+    return r2
+
+@debug_ps
+def R2(pstate):
+    pt = F(pstate)
+
+    if pstate.done():
+        return pt
+
+    if pstate.curToken() == ASTERIK:
+        pstate.match('*')
+        return PTClosure(pt)
+
+    elif pstate.curToken() == BAR:
+        pstate.match('|')
+        return PTAlternation(pt, R2(pstate))
+
+    elif pstate.curToken() == PLUS:
+        pstate.match('+')
+        return PTConcatenation(pt, PTClosure(pt))
+    return pt
+
+@debug_ps
+def CC(pstate):
+    mys = ''
+    while not pstate.done() and pstate.curToken() != RBRACK:
+        mys += pstate.curChar()
+        pstate.next()
+
+    return PTCharSet(mys)
+
+@debug_ps
+def F(pstate):
+    ct = pstate.curToken()
+
+    if ct == LBRACK:
+        pstate.match('[')
+        rs = CC(pstate)
+        pstate.match(']')
+        return rs
+
+    elif ct == LPAREN:
+        pstate.match('(')
+        rs = R2(pstate)
+        pstate.match(')')
+        return rs
+
+    elif ct == OTHER:
+        rv = PTChar(pstate.curChar())
+        pstate.next()
+        if pstate.done:
+            return rv
+        return PTConcatenation(rv, F(pstate))
     
-    return ParseTree()
+def parse(ins):
+    ps = ParserState(ins)
+    return R(ps)
     
 def main():
     parseTree = PTAlternation(PTClosure(PTChar('a')), PTClosure(PTChar('b')))
@@ -74,3 +214,4 @@ def main():
 
 if __name__=="__main__":
     main()
+

@@ -41,13 +41,16 @@ class TestREParser(unittest.TestCase):
         self.assertEqual(str(cat), '(a)(b)')
 
     def testCharClassStr(self):
-        abc = PTCharSet({'a','b','c'})
+        abc = PTCharSet('a-c')
         self.assertEqual(str(abc), '[abc]')
 
     def testCharStr(self):
         ac = PTChar('a')
         self.assertEqual(str(ac), 'a')
 
+    def testTokens(self):
+        self.assertEqual(tokenFor('a'), OTHER)
+        self.assertEqual(tokenFor('-'), DASH)
 
     def testParseChar(self):
         pt = parse('a')
