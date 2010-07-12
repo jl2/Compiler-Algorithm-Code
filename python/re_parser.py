@@ -16,6 +16,10 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+import ply.yacc as yacc
+
+from relex import tokens
+
 class ParseTree(object):
     def __init__(self):
         pass
@@ -79,146 +83,77 @@ class PTCharSet(ParseTree):
         # return '{}'.format([x for x in self.cset])
         return '[{}]'.format(''.join(sorted(self.cset)))
 
-# Tokens:
-OTHER = 0
-LPAREN = 1
-RPAREN = 2
-LBRACK = 3
-RBRACK = 4
-ASTERIK = 5
-DASH = 6
-PLUS = 7
-BAR = 8
 
-tokenTypes = {'(': LPAREN,
-              ')': RPAREN,
-              '[': LBRACK,
-              ']': RBRACK,
-              '+': PLUS,
-              '-': DASH,
-              '|': BAR,
-              '*': ASTERIK}
+def p_r(p):
+    '''r : r2
+         | empty
+    '''
+    if len(p)>2 and p[2]:
+        print("Got: {}".format(p[2]))
+        p[0] = PTConcatenation(p[1], p[2])
+    else:
+        p[0] = p[1]
 
-def tokenFor(char):
-    global tokenTypes
-    return tokenTypes.get(char, OTHER)
+def p_r2_alt(p):
+    "r2 : r BAR r"
+    p[0] = PTAlternation(p[1], p[3])
 
-class RE_SyntaxError(Exception):
+# def p_r_bar(p):
+#     'r : r BAR r'
+#     p[0] = p[1]
+    
+def p_empty(p):
+    'empty :'
     pass
 
-class ParserState(object):
-    def __init__(self, ins):
-        self.string = ins
-        self.position = 0
+def p_r2_closure(p):
+    "r2 : r ASTERIK"
+    p[0] = PTClosure(p[1])
 
-    def match(self, char):
-        if self.curChar() == char:
-            self.position += 1
-            return True
-        raise RE_SyntaxError
+def p_r2_plus(p):
+    "r2 : r PLUS"
+    p[0] = PTConcatenation(p[1], PTClosure(p[1]))
 
-    def curChar(self):
-        return self.string[self.position]
+def p_r2_f(p):
+    "r2 : f"
+    p[0] = p[1]
 
-    def curToken(self):
-        return tokenFor(self.curChar())
+def p_f_paren(p):
+    'f : LPAREN r RPAREN'
+    p[0] = p[2]
 
-    def done(self):
-        return self.position == len(self.string)
+def p_f_char(p):
+    "f : OTHER"
+    p[0] = PTChar(p[1])
 
-    def next(self):
-        self.position += 1
+def p_f_cc(p):
+    "f : LBRACK OTHER RBRACK"
+    p[0] = PTCharSet(p[2])
 
-    def __str__(self):
-        # return '{} (position = {})'.format(self.string, self.position)
-        if self.position>= len(self.string): return '{}_'.format(self.string)
-        return '{}_{}'.format(self.string[0:self.position], self.string[self.position:])
+# def p_ccin(p):
+#     """ccin : OTHER ccin
+#             | empty"""
+#     print('in ccin: {}'.format(list(p)))
+#     if len(p)>2 and p[2]:
+#         p[0] = p[1] + p[2]
+#     else:
+#         p[0] = p[1]
 
-def debug_ps(targ):
-    def wrapp(*args):
-        # print('{}({})'.format(targ.__name__, ','.join(str(arg) for arg in args)))
-        res = targ(*args)
-        # print("{}({}) got: {}".format(targ.__name__, ','.join(str(arg) for arg in args), res))
-        return res
-        
-    return wrapp
+precedence = (
+    ('nonassoc', 'BAR'),
+    ('left', 'ASTERIK', 'PLUS'),
+)
+
+# Error rule for syntax errors
+def p_error(p):
+    print("Syntax error in input: {}".format(p))
 
 
-@debug_ps
-def R(pstate):
-    if pstate.done(): return None
-    r2, r1 = R2(pstate), R(pstate)
-    if r1:
-        return PTConcatenation(r2, r1)
-    return r2
+# Build the parser
+parser = yacc.yacc()
 
-@debug_ps
-def R2(pstate):
-    pt = F(pstate)
-
-    if pstate.done():
-        return pt
-
-    if pstate.curToken() == ASTERIK:
-        pstate.match('*')
-        return PTClosure(pt)
-
-    elif pstate.curToken() == BAR:
-        pstate.match('|')
-        return PTAlternation(pt, R2(pstate))
-
-    elif pstate.curToken() == PLUS:
-        pstate.match('+')
-        return PTConcatenation(pt, PTClosure(pt))
-
-    elif pstate.curToken() in [OTHER, LPAREN, LBRACK]:
-        return PTConcatenation(pt, F(pstate))
-
-    else:
-        return pt
-    
-
-@debug_ps
-def CC(pstate):
-    mys = ''
-    while not pstate.done() and pstate.curToken() != RBRACK:
-        mys += pstate.curChar()
-        pstate.next()
-
-    return PTCharSet(mys)
-
-@debug_ps
-def F(pstate):
-    ct = pstate.curToken()
-
-    if ct == LBRACK:
-        pstate.match('[')
-        rs = CC(pstate)
-        pstate.match(']')
-        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
-            return PTConcatenation(rs, F(pstate))
-        return rs
-
-    elif ct == LPAREN:
-        pstate.match('(')
-        rs = R2(pstate)
-        pstate.match(')')
-        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
-            return PTConcatenation(rs, F(pstate))
-        return rs
-
-    elif ct == OTHER:
-        rv = PTChar(pstate.curChar())
-        pstate.next()
-        if not pstate.done() and pstate.curToken() in [OTHER, LPAREN, LBRACK]:
-            return PTConcatenation(rv, F(pstate))
-        return rv
-
-    raise RE_SyntaxError
-    
 def parse(ins):
-    ps = ParserState(ins)
-    return R(ps)
+    return parser.parse(ins)
     
 def main():
     parseTree = PTAlternation(PTClosure(PTChar('a')), PTClosure(PTChar('b')))

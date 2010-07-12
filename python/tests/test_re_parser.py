@@ -48,10 +48,6 @@ class TestREParser(unittest.TestCase):
         ac = PTChar('a')
         self.assertEqual(str(ac), 'a')
 
-    def testTokens(self):
-        self.assertEqual(tokenFor('a'), OTHER)
-        self.assertEqual(tokenFor('-'), DASH)
-
     def testParseChar(self):
         pt = parse('a')
         self.assertEqual(str(pt), 'a')
@@ -96,6 +92,10 @@ class TestREParser(unittest.TestCase):
         pt = parse('[a-d][x-z]|(abc|def)')
         self.assertEqual(str(pt), '([abcd][xyz])|((abc)|(def))')
 
+    def testParseComplicated10(self):
+        pt = parse('(a-d)(x-z)|(abc|def)')
+        self.assertEqual(str(pt), '([abcd][xyz])|((abc)|(def))')
+
     def testParseComplicated2(self):
         pt = parse('([abc]|[def]*)')
         self.assertEqual(str(pt), '([abc])|(([def])*)')
@@ -118,11 +118,11 @@ class TestREParser(unittest.TestCase):
 
     def testParseComplicated6(self):
         pt = parse('a|b|c')
-        self.assertEqual(str(pt), '(a)|((b)|(c))')
+        self.assertEqual(str(pt), '((a)|(b))|(c)')
 
     def testParseComplicated7(self):
         pt = parse('a|b*|c')
-        self.assertEqual(str(pt), '(a)|(((b)*)|(c))')
+        self.assertEqual(str(pt), '((a)|((b)*))|(c)')
 
 if __name__=='__main__':
     unittest.main()

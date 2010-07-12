@@ -1,0 +1,27 @@
+
+R -> R2 R
+   | e
+
+R2 -> R2 '*'     # Closure
+    | R2 '|' R2   # Alternation
+    | R2 '+'     # One or more
+    | F
+
+R2 -> F NR
+ 
+NR -> '*' NR
+    | '|' R2 NR
+    | '+' NR
+    | e
+
+F -> CC
+   | '(' R ')'    # Parens
+   | [^][*|+()]  # Any character that isn't "special"
+
+CC -> '[' ICC + ']'  # Character range
+    | '[' '^' ICC + ']' # Inverted character range
+
+ICC -> _ '-' _
+     | _
+
+      
