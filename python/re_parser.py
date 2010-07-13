@@ -83,52 +83,74 @@ class PTCharSet(ParseTree):
         # return '{}'.format([x for x in self.cset])
         return '[{}]'.format(''.join(sorted(self.cset)))
 
+def debug_p(msg='', res=[]):
+    print('{}: {}'.format(msg, [str(x) for x in list(res)]))
+    pass
 
 def p_r(p):
-    '''r : r2
+    '''r : r2 r
+         | r BAR r
          | empty
     '''
+    debug_p('r:', p)
+    if len(p)>2 and p[2] == 'BAR':
+        p[0] = PTAlternation(p[1], p[3])
     if len(p)>2 and p[2]:
-        print("Got: {}".format(p[2]))
         p[0] = PTConcatenation(p[1], p[2])
     else:
         p[0] = p[1]
+    debug_p('r:', p)
 
-def p_r2_alt(p):
-    "r2 : r BAR r"
-    p[0] = PTAlternation(p[1], p[3])
+# def p_r2_alt(p):
+#     "r2 : f BAR f"
+#     debug_p(p)
+
+#     debug_p(p)
 
 # def p_r_bar(p):
 #     'r : r BAR r'
 #     p[0] = p[1]
-    
+
 def p_empty(p):
     'empty :'
+    debug_p('empty', p)
     pass
 
 def p_r2_closure(p):
-    "r2 : r ASTERIK"
+    "r2 : r2 ASTERIK"
+    debug_p('', p)
     p[0] = PTClosure(p[1])
+    debug_p('', p)
 
 def p_r2_plus(p):
-    "r2 : r PLUS"
+    "r2 : r2 PLUS"
+    debug_p('', p)
     p[0] = PTConcatenation(p[1], PTClosure(p[1]))
+    debug_p('', p)
 
 def p_r2_f(p):
     "r2 : f"
+    debug_p('', p)
     p[0] = p[1]
+    debug_p('', p)
 
 def p_f_paren(p):
     'f : LPAREN r RPAREN'
+    debug_p('', p)
     p[0] = p[2]
+    debug_p('', p)
 
 def p_f_char(p):
     "f : OTHER"
+    debug_p('', p)
     p[0] = PTChar(p[1])
+    debug_p('', p)
 
 def p_f_cc(p):
     "f : LBRACK OTHER RBRACK"
+    debug_p('', p)
     p[0] = PTCharSet(p[2])
+    debug_p('', p)
 
 # def p_ccin(p):
 #     """ccin : OTHER ccin
@@ -140,8 +162,9 @@ def p_f_cc(p):
 #         p[0] = p[1]
 
 precedence = (
-    ('nonassoc', 'BAR'),
+    ('left', 'BAR'),
     ('left', 'ASTERIK', 'PLUS'),
+
 )
 
 # Error rule for syntax errors

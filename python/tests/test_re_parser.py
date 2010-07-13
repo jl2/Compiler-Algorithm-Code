@@ -94,7 +94,7 @@ class TestREParser(unittest.TestCase):
 
     def testParseComplicated10(self):
         pt = parse('(a-d)(x-z)|(abc|def)')
-        self.assertEqual(str(pt), '([abcd][xyz])|((abc)|(def))')
+        self.assertEqual(str(pt), '((a-d)(x-z))|((abc)|(def))')
 
     def testParseComplicated2(self):
         pt = parse('([abc]|[def]*)')
