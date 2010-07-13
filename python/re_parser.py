@@ -99,7 +99,7 @@ class PTCharSet(ParseTree):
         return '[{}]'.format(''.join(sorted(self.cset)))
 
 def debug_p(msg='', res=[]):
-    print('{}: {}'.format(msg, [str(x) for x in list(res)]))
+    # print('{}: {}'.format(msg, [str(x) for x in list(res)]))
     pass
 
 def p_re(p):
