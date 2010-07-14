@@ -197,8 +197,6 @@ def parse(ins):
     return parser.parse(ins)
     
 def main():
-    parseTree = PTAlternation(PTClosure(PTChar('a')), PTClosure(PTChar('b')))
-    print(parseTree)
     return
 
 if __name__=="__main__":

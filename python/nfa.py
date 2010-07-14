@@ -1,0 +1,68 @@
+#!/usr/bin/python3
+
+# nfa.py
+
+# Copyright (c) 2010, Jeremiah LaRocco jeremiah.larocco@gmail.com
+
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+from collections import namedtuple
+
+Transition = namedtuple('Transition', 'os, ch, ns')
+
+class Nfa(object):
+    def __init__(self):
+        self.transitions = dict()
+        self.start = 0
+        self.accepting = set()
+        pass
+
+    def addTransition(self, tran):
+        self.transitions.update({tran.os: self.transitions.get(tran.os, {})})
+        self.transitions[tran.os].update({tran.ch: self.transitions[tran.os].get(tran.ch, set())})
+        self.transitions[tran.os][tran.ch].update({tran.ns})
+
+    def addTransitions(self, trans):
+        for t in trans:
+            self.addTransition(t)
+
+    def setAccepting(self, st):
+        self.accepting.update({st})
+        
+    def to_dot(self):
+        result = 'digraph { rankdir = LR;'
+        for st in sorted(self.transitions):
+            for chs in sorted(self.transitions[st]):
+                for ns in sorted(self.transitions[st][chs]):
+                    result += ' "{}" -> "{}" [label="{}"];'.format(st, ns, chs)
+
+        for st in sorted(self.accepting):
+            result += ' ' + str(st) + ' [shape=doublecircle];'
+
+        result += ' node [shape=plaintext label=""]; nothing->"0"; }'
+        return result
+
+def main():
+    nf = Nfa()
+    nf.addTransitions([Transition(0, 'a', 1),
+                       Transition(0, 'b', 1),
+                       Transition(0, 'b', 2),
+                       Transition(1, 'a', 2),
+                       Transition(1, 'b', 3),
+                       Transition(3, 'b', 2)])
+    nf.setAccepting(3)
+    print(nf.to_dot())
+
+if __name__=='__main__':
+    main()
