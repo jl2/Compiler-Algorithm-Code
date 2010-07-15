@@ -19,6 +19,8 @@
 
 from collections import namedtuple
 
+import re_parser
+
 Transition = namedtuple('Transition', 'os, ch, ns')
 
 class Nfa(object):
@@ -45,13 +47,26 @@ class Nfa(object):
         for st in sorted(self.transitions):
             for chs in sorted(self.transitions[st]):
                 for ns in sorted(self.transitions[st][chs]):
-                    result += ' "{}" -> "{}" [label="{}"];'.format(st, ns, chs)
+                    lbl = chs
+                    if lbl == '_eps':
+                        lbl = '&epsilon;'
+                    result += ' "{}" -> "{}" [label="{}"];'.format(st, ns, lbl)
 
         for st in sorted(self.accepting):
             result += ' ' + str(st) + ' [shape=doublecircle];'
 
         result += ' node [shape=plaintext label=""]; nothing->"0"; }'
         return result
+
+def fromRegex(rx):
+    pt = re_parser.parse(rx)
+    nf = Nfa()
+    curState = 0
+    ns, newTrans = pt.getTransitions(0)
+    nf.addTransitions(newTrans)
+    nf.setAccepting(ns)
+    return nf
+    
 
 def main():
     nf = Nfa()

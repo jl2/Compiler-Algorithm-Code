@@ -54,3 +54,94 @@ class TestNfa(unittest.TestCase):
         nf.setAccepting(2)
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; "0" -> "2" [label="b"]; 2 [shape=doublecircle];'))
+
+    def testEpsilon(self):
+        nf = Nfa()
+        nf.addTransitions([Transition(0, 'a', 1),
+                           Transition(0, 'b', 2),
+                           Transition(0, '_eps', 2)
+                           ])
+        nf.setAccepting(2)
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "2" [label="&epsilon;"]; "0" -> "1" [label="a"]; "0" -> "2" [label="b"]; 2 [shape=doublecircle];'))
+
+    def testFromChar(self):
+        nf = fromRegex('a')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; 1 [shape=doublecircle];'))
+
+    def testFromCharParens(self):
+        nf = fromRegex('(a)')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; 1 [shape=doublecircle];'))
+
+    def testConcatChars(self):
+        nf = fromRegex('ab')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; "1" -> "2" [label="b"]; 2 [shape=doublecircle];'))
+
+    def testConcatCharsParens(self):
+        nf = fromRegex('(a)(b)')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; "1" -> "2" [label="b"]; 2 [shape=doublecircle];'))
+
+
+    def testAlt(self):
+        nf = fromRegex('a|b')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
+                                          '"0" -> "3" [label="&epsilon;"]; ' + 
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '"2" -> "5" [label="&epsilon;"]; ' + 
+                                          '"3" -> "4" [label="b"]; ' +
+                                          '"4" -> "5" [label="&epsilon;"]; ' +
+                                          '5 [shape=doublecircle];'))
+
+    def testConcatAlt(self):
+        nf = fromRegex('ab|c')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
+                                          '"0" -> "4" [label="&epsilon;"]; ' +
+                                          '"1" -> "2" [label="a"]; "2" -> "3" [label="b"]; ' +
+                                          '"3" -> "6" [label="&epsilon;"]; ' + 
+                                          '"4" -> "5" [label="c"]; ' +
+                                          '"5" -> "6" [label="&epsilon;"]; ' +
+                                          '6 [shape=doublecircle];'))
+
+    def testClosure(self):
+        nf = fromRegex('a*')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
+                                          '"0" -> "3" [label="&epsilon;"]; ' +
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '"2" -> "1" [label="&epsilon;"]; ' + 
+                                          '"2" -> "3" [label="&epsilon;"]; ' +
+                                          '3 [shape=doublecircle];'))
+
+    def testConcatClosure(self):
+        nf = fromRegex('(ab)*')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
+                                          '"0" -> "4" [label="&epsilon;"]; ' +
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '"2" -> "3" [label="b"]; ' +
+                                          '"3" -> "1" [label="&epsilon;"]; ' + 
+                                          '"3" -> "4" [label="&epsilon;"]; ' +
+                                          '4 [shape=doublecircle];'))
+
+    def testAltClosure(self):
+        nf = fromRegex('a*|b')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
+                                          '"0" -> "5" [label="&epsilon;"]; ' + 
+
+                                          '"1" -> "2" [label="&epsilon;"]; ' +
+                                          '"1" -> "4" [label="&epsilon;"]; ' +
+                                          '"2" -> "3" [label="a"]; ' +
+                                          '"3" -> "2" [label="&epsilon;"]; ' +
+                                          '"3" -> "4" [label="&epsilon;"]; ' + 
+
+                                          '"4" -> "7" [label="&epsilon;"]; ' + 
+                                          '"5" -> "6" [label="b"]; ' +
+                                          '"6" -> "7" [label="&epsilon;"]; ' + 
+                                          '7 [shape=doublecircle];'))

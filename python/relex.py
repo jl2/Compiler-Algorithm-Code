@@ -29,7 +29,7 @@ t_PLUS = '\+'
 t_BAR = '\|'
 
 def t_OTHER(t):
-    '[^][()|+* \t]+'
+    '[^][()|+* \t]'
     return t
 
 # A string containing ignored characters (spaces and tabs)

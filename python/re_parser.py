@@ -25,12 +25,17 @@ import ply.yacc as yacc
 
 from relex import tokens
 
+from nfa import Transition
+
 class ParseTree(object):
     def __init__(self):
         pass
 
     def __str__(self):
         return ''
+    
+    def getTransitions(self, in_s):
+        raise Exception('No transitions for this class')
 
 class PTChar(ParseTree):
     def __init__(self, val):
@@ -40,6 +45,9 @@ class PTChar(ParseTree):
 
     def __str__(self):
         return self.val
+    
+    def getTransitions(self, in_s):
+        return (in_s + 1, [Transition(in_s, self.val, in_s+1)])
 
 class PTClosure(ParseTree):
     def __init__(self, child):
@@ -49,6 +57,15 @@ class PTClosure(ParseTree):
 
     def __str__(self):
         return '({})*'.format(self.child)
+
+    def getTransitions(self, in_s):
+        ns, childTrans = self.child.getTransitions(in_s+1)
+        
+        return (ns+1, [Transition(in_s, '_eps', in_s+1),
+                      Transition(in_s, '_eps', ns+1),
+                      Transition(ns, '_eps', in_s+1),
+                      Transition(ns, '_eps', ns+1)] + childTrans)
+
 
 class PTAlternation(ParseTree):
     def __init__(self, left, right):
@@ -60,6 +77,17 @@ class PTAlternation(ParseTree):
     def __str__(self):
         return '({})|({})'.format(self.left, self.right)
 
+
+    def getTransitions(self, in_s):
+        ns, leftTrans = self.left.getTransitions(in_s+1)
+        ns2, rightTrans = self.right.getTransitions(ns+1)
+        
+        
+        return (ns2+1, [Transition(in_s, '_eps', in_s+1),
+                      Transition(in_s, '_eps', ns+1),
+                      Transition(ns, '_eps', ns2+1),
+                      Transition(ns2, '_eps', ns2+1)] + leftTrans + rightTrans)
+
 class PTConcatenation(ParseTree):
     def __init__(self, left, right):
         if left is None or right is None:
@@ -69,6 +97,12 @@ class PTConcatenation(ParseTree):
 
     def __str__(self):
         return '{}{}'.format(self.left, self.right)
+
+    def getTransitions(self, in_s):
+        ns, leftTrans = self.left.getTransitions(in_s)
+        ns2, rightTrans = self.right.getTransitions(ns)
+        
+        return (ns2, leftTrans + rightTrans)
 
 class PTCharSet(ParseTree):
     def __init__(self, cset_str):
@@ -158,7 +192,7 @@ def p_plus(p):
 def p_elemre(p):
     ''' elemre : group
                | char
-               | cclass
+               | cset
     '''
     debug_p('elemre', p)
     p[0] = p[1]
@@ -178,17 +212,30 @@ def p_char(p):
     p[0] = PTChar(p[1])
     debug_p('  .', p)
 
-def p_cclass(p):
-    ''' cclass : LBRACK OTHER RBRACK
+def p_cset(p):
+    ''' cset : LBRACK setitems RBRACK
     '''
     debug_p('[', p)
     p[0] = PTCharSet(p[2])
     debug_p('  ]', p)
 
+def p_setitems(p):
+    ''' setitems : setitem
+                 | setitem setitems
+    '''
+    if len(p)>2:
+        p[0] = p[1] + p[2]
+    else:
+        p[0] = p[1]
+
+def p_setitem(p):
+    ''' setitem : OTHER
+    '''
+    p[0] = p[1]
+
 # Error rule for syntax errors
 def p_error(p):
     print("Syntax error in input: {}".format(p))
-
 
 # Build the parser
 parser = yacc.yacc()
