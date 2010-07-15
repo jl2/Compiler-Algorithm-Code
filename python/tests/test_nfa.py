@@ -145,3 +145,10 @@ class TestNfa(unittest.TestCase):
                                           '"5" -> "6" [label="b"]; ' +
                                           '"6" -> "7" [label="&epsilon;"]; ' + 
                                           '7 [shape=doublecircle];'))
+
+    def testEClosure(self):
+        nf = Nfa()
+        nf.addTransitions([Transition(0, 'a', 1),
+                           Transition(0, '_eps', 1),
+                           Transition(1, '_eps', 2)])
+        self.assertEqual(nf.e_closure(0), {0, 1, 2})

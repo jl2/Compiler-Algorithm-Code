@@ -58,6 +58,21 @@ class Nfa(object):
         result += ' node [shape=plaintext label=""]; nothing->"0"; }'
         return result
 
+    def e_closure(self, st):
+        if self.transitions.get(st) is None:
+            return set()
+        ss = {st}
+        nt = set()
+        os = 0
+        ns = len(ss)
+        while os != ns:
+            os = ns
+            for s in ss:
+                nt.update(self.transitions.get(s, {}).get('_eps', set()))
+            ss.update(nt)
+            ns = len(ss)
+        return ss
+
 def fromRegex(rx):
     pt = re_parser.parse(rx)
     nf = Nfa()
@@ -66,18 +81,9 @@ def fromRegex(rx):
     nf.addTransitions(newTrans)
     nf.setAccepting(ns)
     return nf
-    
 
 def main():
-    nf = Nfa()
-    nf.addTransitions([Transition(0, 'a', 1),
-                       Transition(0, 'b', 1),
-                       Transition(0, 'b', 2),
-                       Transition(1, 'a', 2),
-                       Transition(1, 'b', 3),
-                       Transition(3, 'b', 2)])
-    nf.setAccepting(3)
-    print(nf.to_dot())
+    print(fromRegex('abc(ab|cd*)*def').to_dot())
 
 if __name__=='__main__':
     main()
