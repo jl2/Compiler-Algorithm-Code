@@ -58,9 +58,15 @@ class Nfa(object):
         result += ' node [shape=plaintext label=""]; nothing->"0"; }'
         return result
 
+    # Return a set of states accessible from st using only epsilon transitions
     def e_closure(self, st):
         if self.transitions.get(st) is None:
-            return set()
+            # This could happen in two cases:
+            #  * st really doesn't exist
+            #  * st is a terminating accept state
+            # Return {st} to simplify handling the second case...
+            return {st}
+
         ss = {st}
         nt = set()
         os = 0
@@ -73,6 +79,29 @@ class Nfa(object):
             ns = len(ss)
         return ss
 
+    # nfa_move is described in Figure 3.31 of section 3.7.1 of the Dragon book
+    def nfa_move(self, sts, ch):
+        new_states = set()
+        for st in sts:
+            tmp = self.transitions.get(st, {}).get(ch, set())
+            for subs in tmp:
+                new_states.update(self.e_closure(subs))
+        return new_states
+
+    # Test whether an Nfa accepts for the given string
+    def matches(self, ins):
+        curs = self.e_closure(self.start)
+        for c in ins:
+            curs = self.nfa_move(curs, c)
+        return len(curs.intersection(self.accepting))>0
+
+# nfa_matches :: Nfa -> String -> Bool
+# nfa_matches fa str =
+#     ((Set.size (Set.intersection (n_accepting fa) (inner_match fa str (e_closure fa (n_start fa)))))>0)
+#     where
+#       inner_match fa ([]) set = set
+#       inner_match fa (x:xs) set = inner_match fa xs (e_closure_set fa (nfa_move fa set (NfaChar x)))
+
 def fromRegex(rx):
     pt = re_parser.parse(rx)
     nf = Nfa()
@@ -81,6 +110,10 @@ def fromRegex(rx):
     nf.addTransitions(newTrans)
     nf.setAccepting(ns)
     return nf
+
+def re_match(rx, ins):
+    nf = fromRegex(rx)
+    return nf.matches(ins)
 
 def main():
     print(fromRegex('abc(ab|cd*)*def').to_dot())
