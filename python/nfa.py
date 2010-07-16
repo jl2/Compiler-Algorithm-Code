@@ -95,13 +95,6 @@ class Nfa(object):
             curs = self.nfa_move(curs, c)
         return len(curs.intersection(self.accepting))>0
 
-# nfa_matches :: Nfa -> String -> Bool
-# nfa_matches fa str =
-#     ((Set.size (Set.intersection (n_accepting fa) (inner_match fa str (e_closure fa (n_start fa)))))>0)
-#     where
-#       inner_match fa ([]) set = set
-#       inner_match fa (x:xs) set = inner_match fa xs (e_closure_set fa (nfa_move fa set (NfaChar x)))
-
 def fromRegex(rx):
     pt = re_parser.parse(rx)
     nf = Nfa()

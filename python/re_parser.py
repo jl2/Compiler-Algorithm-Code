@@ -140,27 +140,6 @@ class PTCharSet(ParseTree):
         for char in sorted(self.cset):
             trs.append(Transition(in_s, char, in_s+1))
         return (in_s + 1, trs)
-        # cs = in_s
-        # os = in_s + 1
-        # trs = []
-        # Transition(in_s, '_eps', in_s+1)
-        # for char in sorted(self.cset):
-        #     trs.append(Transition(in_s, '_eps', cs))
-        #     trs.append(Transition(cs+1, char, os))
-        #     trs.append(Transition(cs+2, '_eps', os
-                       
-        
-            
-            
-        # ns, leftTrans = self.left.getTransitions(in_s+1)
-        # ns2, rightTrans = self.right.getTransitions(ns+1)
-        
-        
-        # return (ns2+1, [Transition(in_s, '_eps', in_s+1),
-        #               Transition(in_s, '_eps', ns+1),
-        #               Transition(ns, '_eps', ns2+1),
-        #               Transition(ns2, '_eps', ns2+1)] + leftTrans + rightTrans)
-
 
 def debug_p(msg='', res=[]):
     # print('{}: {}'.format(msg, [str(x) for x in list(res)]))
