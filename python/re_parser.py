@@ -25,7 +25,7 @@ import ply.yacc as yacc
 
 from relex import tokens
 
-from nfa import Transition
+from nfa import Transition, Nfa
 
 class ParseTree(object):
     def __init__(self):
@@ -350,6 +350,20 @@ parser = yacc.yacc()
 
 def parse(ins):
     return parser.parse(ins)
+
+def fromRegex(rx):
+    pt = parse(rx)
+    nf = Nfa()
+    curState = 0
+    ns, newTrans = pt.getTransitions(0)
+    nf.addTransitions(newTrans)
+    nf.setAccepting(ns)
+    return nf
+
+def re_match(rx, ins):
+    nf = fromRegex(rx)
+    return nf.matches(ins)
+
     
 def main():
     return

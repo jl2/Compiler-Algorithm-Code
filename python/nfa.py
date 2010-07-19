@@ -19,7 +19,7 @@
 
 from collections import namedtuple
 
-import re_parser
+# import re_parser
 
 Transition = namedtuple('Transition', 'os, ch, ns')
 
@@ -94,19 +94,6 @@ class Nfa(object):
         for c in ins:
             curs = self.nfa_move(curs, c)
         return len(curs.intersection(self.accepting))>0
-
-def fromRegex(rx):
-    pt = re_parser.parse(rx)
-    nf = Nfa()
-    curState = 0
-    ns, newTrans = pt.getTransitions(0)
-    nf.addTransitions(newTrans)
-    nf.setAccepting(ns)
-    return nf
-
-def re_match(rx, ins):
-    nf = fromRegex(rx)
-    return nf.matches(ins)
 
 def main():
     print(fromRegex('abc(ab|cd*)*def').to_dot())

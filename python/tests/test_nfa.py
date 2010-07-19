@@ -1,6 +1,6 @@
 #/usr/bin/python3
 
-# test_nfa.py
+# test_re_parser.py
 
 # Copyright (c) 2010, Jeremiah LaRocco jeremiah.larocco@gmail.com
 
@@ -19,6 +19,7 @@
 import unittest
 
 from nfa import *
+from re_parser import *
 
 def digraph_template(txt):
     return 'digraph { rankdir = LR; ' + txt + ' node [shape=plaintext label=""]; nothing->"0"; }'
@@ -302,3 +303,6 @@ class TestNfa(unittest.TestCase):
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '720-303-1234'))
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234'))
         self.assertFalse(re_match('([0-9]{3,4}-?){3}', '720303a1234'))
+    
+if __name__=='__main__':
+    unittest.main()
