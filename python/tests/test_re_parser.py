@@ -63,6 +63,15 @@ class TestREParser(unittest.TestCase):
     def testParseClosure(self):
         self.assertEqual(str(parse('a*')), '(a)*')
 
+    def testParseCount(self):
+        self.assertEqual(str(parse('(a){3}')), '(a){3}')
+
+    def testParseMinMaxCount(self):
+        self.assertEqual(str(parse('a{3,4}')), '(a){3,4}')
+
+    def testParseComma(self):
+        self.assertEqual(str(parse('3,4,5')), '3,4,5')
+
     def testParseParens(self):
         self.assertEqual(str(parse('(a)')), 'a')
 
@@ -114,6 +123,6 @@ class TestREParser(unittest.TestCase):
 
     def testParseComplicated7(self):
         self.assertEqual(str(parse('a|b*|c')), '((a)|((b)*))|(c)')
-
+    
 if __name__=='__main__':
     unittest.main()

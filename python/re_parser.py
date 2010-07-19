@@ -66,6 +66,55 @@ class PTClosure(ParseTree):
                       Transition(ns, '_eps', in_s+1),
                       Transition(ns, '_eps', ns+1)] + childTrans)
 
+class PTCount(ParseTree):
+    def __init__(self, child, cmin, cmax):
+        if child is None:
+            raise Exception('cannot have None count')
+        if cmin > cmax or cmax == 0:
+            raise Exception('Bad range for count {} - {}'.format(cmin, cmax))
+        self.child = child
+        self.cmin = int(cmin)
+        self.cmax = int(cmax)
+
+    def __str__(self):
+        rv = '({})'.format(self.child)
+        if (self.cmin == self.cmax):
+            rv += '{{{}}}'.format(self.cmin)
+        else:
+            rv += '{{{},{}}}'.format(self.cmin, self.cmax)
+        return rv
+
+    def getTransitions(self, in_s):
+        trans = []
+        ns = in_s
+        ct = []
+        
+        for i in range(self.cmin):
+            nns, ct = self.child.getTransitions(ns)
+            trans += ct
+            ns = nns
+
+        to_end = []
+
+        for i in range(self.cmax - self.cmin):
+            to_end.append(ns)
+            nns, ct = self.child.getTransitions(ns)
+            trans += ct
+
+            ns = nns
+
+        for st in to_end:
+            trans.append(Transition(st, '_eps', ns))
+
+        return (ns, trans)
+
+        # ns, childTrans = self.child.getTransitions(in_s+1)
+        
+        # return (ns+1, [Transition(in_s, '_eps', in_s+1),
+        #               Transition(in_s, '_eps', ns+1),
+        #               Transition(ns, '_eps', in_s+1),
+        #               Transition(ns, '_eps', ns+1)] + childTrans)
+
 
 class PTAlternation(ParseTree):
     def __init__(self, left, right):
@@ -177,7 +226,9 @@ def p_concat(p):
     
 def p_basicre(p):
     ''' basicre : star
+                | opt
                 | plus
+                | count
                 | elemre
     '''
     debug_p('bre', p)
@@ -190,6 +241,41 @@ def p_star(p):
     debug_p('star', p)
     p[0] = PTClosure(p[1])
     debug_p('  star', p)
+
+def p_opt(p):
+    ''' opt : elemre OPT
+    '''
+    debug_p('opt', p)
+    p[0] = PTCount(p[1], 0, 1)
+    debug_p('  opt', p)
+
+def p_count(p):
+    ''' count : elemre icount
+    '''
+    debug_p('count', p)
+    cmin, cmax = p[2][0], p[2][1]
+    p[0] = PTCount(p[1], cmin, cmax)
+    debug_p('  count', p)
+
+def p_icount(p):
+    ''' icount : LBRACE incount RBRACE
+    '''
+    debug_p('{', p)
+    p[0] = p[2]
+    debug_p('  }', p)
+
+def p_incount(p):
+    ''' incount : NUMBER
+               | NUMBER COMMA NUMBER
+    '''
+    debug_p('icount', p)
+
+    if len(p)>2:
+        p[0] = (p[1], p[3])
+    else:
+        p[0] = (p[1], p[1])
+
+    debug_p('  icount', p)
 
 def p_plus(p):
     ''' plus : elemre PLUS
@@ -216,11 +302,13 @@ def p_group(p):
 
 def p_char(p):
     ''' char : OTHER
+             | COMMA
+             | NUMBER
     '''
     debug_p('.', p)
     p[0] = PTChar(p[1])
     debug_p('  .', p)
-
+   
 def p_cset(p):
     ''' cset : LBRACK setitems RBRACK
     '''
@@ -232,19 +320,30 @@ def p_setitems(p):
     ''' setitems : setitem
                  | setitem setitems
     '''
+    debug_p('si', p)
     if len(p)>2:
         p[0] = p[1] + p[2]
     else:
         p[0] = p[1]
+    debug_p('  si', p)
 
 def p_setitem(p):
     ''' setitem : OTHER
+                | NUMBER
+                | COMMA
+                | LPAREN
+                | RPAREN
     '''
+    debug_p('si2', p)
     p[0] = p[1]
+    debug_p('  si2', p)
 
 # Error rule for syntax errors
 def p_error(p):
-    print("Syntax error in input: {}".format(p))
+    # Better error handling required...
+    # print("Syntax error in input: {}".format(p))
+    pass
+
 
 # Build the parser
 parser = yacc.yacc()

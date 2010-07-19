@@ -80,6 +80,11 @@ class TestNfa(unittest.TestCase):
         # self.assertEqual(nf.to_dot(),
         #                  digraph_template('"0" -> "1" [label="a"]; "0" -> "1" [label="b"]; 1 [shape=doublecircle];'))
 
+    def testBadCounts1(self):
+        self.assertRaises(Exception, fromRegex, '{0}')
+
+    def testBadCounts2(self):
+        self.assertRaises(Exception, fromRegex, '{4,2}')
 
     def testCSetConcat(self):
         nf = fromRegex('[ab][def]')
@@ -140,6 +145,29 @@ class TestNfa(unittest.TestCase):
                                           '"4" -> "5" [label="c"]; ' +
                                           '"5" -> "6" [label="&epsilon;"]; ' +
                                           '6 [shape=doublecircle];'))
+
+    def testCount(self):
+        nf = fromRegex('a{3}')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; ' +
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '"2" -> "3" [label="a"]; ' +
+                                          '3 [shape=doublecircle];'))
+    def testCountMinMax(self):
+        nf = fromRegex('a{1,2}')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "1" [label="a"]; ' +
+                                          '"1" -> "2" [label="&epsilon;"]; ' +
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '2 [shape=doublecircle];'))
+    def testCountZeroMin(self):
+        nf = fromRegex('a{0,2}')
+        self.assertEqual(nf.to_dot(),
+                         digraph_template('"0" -> "2" [label="&epsilon;"]; ' +
+                                          '"0" -> "1" [label="a"]; ' +
+                                          '"1" -> "2" [label="&epsilon;"]; ' +
+                                          '"1" -> "2" [label="a"]; ' +
+                                          '2 [shape=doublecircle];'))
 
     def testClosure(self):
         nf = fromRegex('a*')
@@ -202,11 +230,11 @@ class TestNfa(unittest.TestCase):
 
         self.assertEqual(nf.nfa_move({0}, 'a'), {1,2})
 
-    def testMatch1(self):
+    def testMatch01(self):
         self.assertTrue(re_match('abc|def', 'abc'))
         self.assertFalse(re_match('abc|def', 'abd'))
 
-    def testMatch2(self):
+    def testMatch02(self):
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abcdef'))
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abccddef'))
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abccdcddef'))
@@ -216,7 +244,7 @@ class TestNfa(unittest.TestCase):
         self.assertFalse(re_match('abc(ab|cd*)*def', 'abcababcdabceddef'))
         self.assertFalse(re_match('abc(ab|cd*)*def', 'abc'))
     
-    def testMatch3(self):
+    def testMatch03(self):
         self.assertTrue(re_match('(abc+)+', 'abc'))
         self.assertTrue(re_match('(abc+)+', 'abccc'))
         self.assertTrue(re_match('(abc+)+', 'abcccabcc'))
@@ -224,10 +252,10 @@ class TestNfa(unittest.TestCase):
 
         self.assertFalse(re_match('(abc+)+', 'abcccabccab'))
                         
-    def testMatch4(self):
+    def testMatch04(self):
         self.assertTrue(re_match('[a-z]+', 'abcdefg'))
 
-    def testMatch5(self):
+    def testMatch05(self):
         self.assertTrue(re_match('[a-z]+|[0-9]+', 'abcdefg'))
         self.assertTrue(re_match('[a-z]+|[0-9]+', '432'))
         self.assertTrue(re_match('[a-z]+|[0-9]+', '1'))
@@ -235,16 +263,42 @@ class TestNfa(unittest.TestCase):
         
         self.assertFalse(re_match('[a-z]+|[0-9]+', '(432)'))
 
-    def testMatch6(self):
+    def testMatch06(self):
         self.assertTrue(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-303-1234'))
         self.assertFalse(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-3031-1234'))
 
-    def testMatch7(self):
+    def testMatch07(self):
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-1234'))
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-123-1234'))
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-1234'))
         self.assertFalse(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '1234'))
 
-    def testMatch8(self):
+    def testMatch08(self):
         self.assertTrue(re_match('(abc*)+', 'ab'))
 
+    def testMatch09(self):
+        self.assertTrue(re_match('(abc){3}', 'abcabcabc'))
+        self.assertFalse(re_match('(abc){3}', 'abcabc'))
+        self.assertFalse(re_match('(abc){3}', 'abcabcabcabc'))
+
+    def testMatch10(self):
+        self.assertFalse(re_match('a{2,3}', 'a'))
+        self.assertTrue(re_match('a{2,3}', 'aa'))
+        self.assertTrue(re_match('a{2,3}', 'aaa'))
+        self.assertFalse(re_match('a{2,3}', 'aaaa'))
+        
+    def testMatch11(self):
+        self.assertTrue(re_match('a{0,3}', ''))
+        self.assertTrue(re_match('a{0,3}', 'a'))
+        self.assertTrue(re_match('a{0,3}', 'aa'))
+        self.assertTrue(re_match('a{0,3}', 'aaa'))
+        self.assertFalse(re_match('a{0,3}', 'aaaa'))
+
+    def testMatch12(self):
+        self.assertTrue(re_match('([0-9]{3}-){2}[0-9]{4}', '720-303-1234'))
+
+    def testMatch13(self):
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}[0-9]', '720-303-1234'))
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}', '720-303-1234'))
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234'))
+        self.assertFalse(re_match('([0-9]{3,4}-?){3}', '720303a1234'))
