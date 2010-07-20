@@ -303,6 +303,11 @@ class TestNfa(unittest.TestCase):
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234'))
         self.assertTrue(re_match('([:digit:]{3,4}-?){3}', '7203031234'))
         self.assertFalse(re_match('([0-9]{3,4}-?){3}', '720303a1234'))
+
+    def testUnicodeMatch(self):
+        self.assertTrue(re_match('▰', '▰'))
+        self.assertTrue(re_match('▰+▣▰', '▰▰▣▰'))
+        self.assertTrue(re_match('([◯-◿])+', '◯◺◯◿◯'))
     
 if __name__=='__main__':
     unittest.main()

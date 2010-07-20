@@ -183,6 +183,8 @@ class PTConcatenation(ParseTree):
         
         return (ns2, leftTrans + rightTrans)
 
+
+# POSIX character sets
 named_csets = {':alnum:': 'a-zA-Z0-9',
                ':alpha:': 'a-zA-Z',
                ':ascii:': '\x00-\x7F',
