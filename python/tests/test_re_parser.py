@@ -47,11 +47,24 @@ class TestREParser(unittest.TestCase):
         ac = PTCharSet('a')
         self.assertEqual(str(ac), 'a')
 
+    def testNamedCharClass(self):
+        ac = PTCharSet(':digit:')
+        self.assertEqual(str(ac), '[0123456789]')
+
     def testParseChar(self):
         self.assertEqual(str(parser.parse('a')), 'a')
 
     def testParseCharSet(self):
         self.assertEqual(str(parser.parse('[a-z]')), '[{}]'.format(''.join([chr(x) for x in range(ord('a'), ord('z')+1)])))
+
+    def testParseCharSetNamed(self):
+        self.assertEqual(str(parser.parse('[:digit:]')), '[0123456789]')
+
+    def testParseCharSetNamed2(self):
+        self.assertEqual(str(parser.parse('[:punct:]')), '[!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]')
+
+    def testParseCharSetNamed3(self):
+        self.assertEqual(str(parser.parse('[:xdigit:]')), str(parser.parse('[0-9a-fA-F]')))
 
     def testParseAlt(self):
         self.assertEqual(str(parser.parse('a|b')), '(a)|(b)')

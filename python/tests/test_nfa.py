@@ -228,7 +228,7 @@ class TestNfa(unittest.TestCase):
                            Transition(0, '_eps', 1),
                            Transition(1, '_eps', 2)])
 
-        self.assertEqual(nf.nfa_move({0}, 'a'), {1,2})
+        self.assertEqual(nf.move({0}, 'a'), {1,2})
 
     def testMatch01(self):
         self.assertTrue(re_match('abc|def', 'abc'))
@@ -257,9 +257,9 @@ class TestNfa(unittest.TestCase):
 
     def testMatch05(self):
         self.assertTrue(re_match('[a-z]+|[0-9]+', 'abcdefg'))
-        self.assertTrue(re_match('[a-z]+|[0-9]+', '432'))
+        self.assertTrue(re_match('[:alpha:]+|[:digit:]+', '432'))
         self.assertTrue(re_match('[a-z]+|[0-9]+', '1'))
-        self.assertTrue(re_match('[a-z]+|[0-9]+', 'a'))
+        self.assertTrue(re_match('[:alnum:]+|[0-9]+', 'a'))
         
         self.assertFalse(re_match('[a-z]+|[0-9]+', '(432)'))
 
@@ -301,6 +301,7 @@ class TestNfa(unittest.TestCase):
         self.assertTrue(re_match('([0-9]{3,4}-?){3}[0-9]', '720-303-1234'))
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '720-303-1234'))
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234'))
+        self.assertTrue(re_match('([:digit:]{3,4}-?){3}', '7203031234'))
         self.assertFalse(re_match('([0-9]{3,4}-?){3}', '720303a1234'))
     
 if __name__=='__main__':

@@ -183,11 +183,28 @@ class PTConcatenation(ParseTree):
         
         return (ns2, leftTrans + rightTrans)
 
+named_csets = {':alnum:': 'a-zA-Z0-9',
+               ':alpha:': 'a-zA-Z',
+               ':ascii:': '\x00-\x7F',
+               ':blank:': ' \t',
+               ':cntrl:': '\x00-\x1F\x7F',
+               ':digit:': '0-9',
+               ':graph:': '\x21-\x7E',
+               ':lower:': 'a-z',
+               ':print:': '\x21-\x7E',
+               ':punct:': '''!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~''',
+               ':space:': ' \t\r\n\v\f',
+               ':upper:': 'A-Z',
+               ':word:': 'a-zA-Z0-9_',
+               ':xdigit:': '0-9a-fA-F'}
+
 class PTCharSet(ParseTree):
     def __init__(self, cset_str):
         if cset_str is None:
             raise Exception('cannot have None in CharSet')
         self.cset = set()
+        if named_csets.get(cset_str):
+            cset_str = named_csets[cset_str]
         i = 0
         while (i<len(cset_str)):
             if i==0 and cset_str[i]=='-':
