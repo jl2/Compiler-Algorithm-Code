@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# re_parser.py
+# regex.py
 
 # Copyright (c) 2010, Jeremiah LaRocco jeremiah.larocco@gmail.com
 
@@ -28,22 +28,19 @@ from collections import namedtuple
 # List of token names.   This is always required
 
 tokens = (
-'LPAREN',
-'RPAREN',
+    'LPAREN', 'RPAREN',
 
-'LBRACK',
-'RBRACK',
+    'LBRACK', 'RBRACK',
 
-'LBRACE',
-'RBRACE',
+    'LBRACE', 'RBRACE',
 
-'ASTERIK',
-'PLUS',
-'BAR',
-'NUMBER',
-'COMMA',
-'OPT',
-'OTHER'
+    'ASTERIK',
+    'PLUS',
+    'BAR',
+    'NUMBER',
+    'COMMA',
+    'OPT',
+    'OTHER'
 )
 
 # Regular expression rules for simple tokens
@@ -82,25 +79,13 @@ Transition = namedtuple('Transition', 'os, ch, ns')
 
 class ParseTree(object):
     def __init__(self):
-        pass
+        raise Exception('Impossible to create a base class ParseTree')
 
     def __str__(self):
-        return ''
+        raise Exception('Use a subclass')
     
     def getTransitions(self, in_s):
-        raise Exception('No transitions for this class')
-
-class PTChar(ParseTree):
-    def __init__(self, val):
-        if val is None:
-            raise Exception('cannot have None character')
-        self.val = val
-
-    def __str__(self):
-        return self.val
-    
-    def getTransitions(self, in_s):
-        return (in_s + 1, [Transition(in_s, self.val, in_s+1)])
+        raise Exception('No transitions for ParseTree base class')
 
 class PTClosure(ParseTree):
     def __init__(self, child):
@@ -115,9 +100,9 @@ class PTClosure(ParseTree):
         ns, childTrans = self.child.getTransitions(in_s+1)
         
         return (ns+1, [Transition(in_s, '_eps', in_s+1),
-                      Transition(in_s, '_eps', ns+1),
-                      Transition(ns, '_eps', in_s+1),
-                      Transition(ns, '_eps', ns+1)] + childTrans)
+                       Transition(in_s, '_eps', ns+1),
+                       Transition(ns, '_eps', in_s+1),
+                       Transition(ns, '_eps', ns+1)] + childTrans)
 
 class PTCount(ParseTree):
     def __init__(self, child, cmin, cmax):
@@ -160,14 +145,6 @@ class PTCount(ParseTree):
             trans.append(Transition(st, '_eps', ns))
 
         return (ns, trans)
-
-        # ns, childTrans = self.child.getTransitions(in_s+1)
-        
-        # return (ns+1, [Transition(in_s, '_eps', in_s+1),
-        #               Transition(in_s, '_eps', ns+1),
-        #               Transition(ns, '_eps', in_s+1),
-        #               Transition(ns, '_eps', ns+1)] + childTrans)
-
 
 class PTAlternation(ParseTree):
     def __init__(self, left, right):
@@ -231,6 +208,8 @@ class PTCharSet(ParseTree):
 
     # ugly, but works
     def __str__(self):
+        if len(self.cset)==1:
+            return ''.join(self.cset)
         # return '{}'.format([x for x in self.cset])
         return '[{}]'.format(''.join(sorted(self.cset)))
 
@@ -359,7 +338,7 @@ def p_char(p):
              | NUMBER
     '''
     debug_p('.', p)
-    p[0] = PTChar(p[1])
+    p[0] = PTCharSet(p[1])
     debug_p('  .', p)
    
 def p_cset(p):
@@ -464,8 +443,8 @@ class Nfa(object):
             ns = len(ss)
         return ss
 
-    # nfa_move is described in Figure 3.31 of section 3.7.1 of the Dragon book
-    def nfa_move(self, sts, ch):
+    # move is described in Figure 3.31 of section 3.7.1 of the Dragon book
+    def move(self, sts, ch):
         new_states = set()
         for st in sts:
             tmp = self.transitions.get(st, {}).get(ch, set())
@@ -477,7 +456,7 @@ class Nfa(object):
     def matches(self, ins):
         curs = self.e_closure(self.start)
         for c in ins:
-            curs = self.nfa_move(curs, c)
+            curs = self.move(curs, c)
         return len(curs.intersection(self.accepting))>0
 
 def re_match(rx, ins):

@@ -23,20 +23,19 @@ from regex import *
 class TestREParser(unittest.TestCase):
 
     def testClosureStr(self):
-        ac = PTChar('a')
-        bc = PTChar('b')
+        ac = PTCharSet('a')
         close = PTClosure(ac)
         self.assertEqual(str(close), '(a)*')
 
     def testAlternationStr(self):
-        ac = PTChar('a')
-        bc = PTChar('b')
+        ac = PTCharSet('a')
+        bc = PTCharSet('b')
         alt = PTAlternation(ac, bc)
         self.assertEqual(str(alt), '(a)|(b)')
 
     def testConcatenationStr(self):
-        ac = PTChar('a')
-        bc = PTChar('b')
+        ac = PTCharSet('a')
+        bc = PTCharSet('b')
         cat = PTConcatenation(ac, bc)
         self.assertEqual(str(cat), 'ab')
 
@@ -45,7 +44,7 @@ class TestREParser(unittest.TestCase):
         self.assertEqual(str(abc), '[abc]')
 
     def testCharStr(self):
-        ac = PTChar('a')
+        ac = PTCharSet('a')
         self.assertEqual(str(ac), 'a')
 
     def testParseChar(self):
