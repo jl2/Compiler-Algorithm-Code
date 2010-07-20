@@ -18,8 +18,7 @@
 
 import unittest
 
-from nfa import *
-from re_parser import *
+from regex import *
 
 def digraph_template(txt):
     return 'digraph { rankdir = LR; ' + txt + ' node [shape=plaintext label=""]; nothing->"0"; }'
@@ -67,28 +66,28 @@ class TestNfa(unittest.TestCase):
                          digraph_template('"0" -> "2" [label="&epsilon;"]; "0" -> "1" [label="a"]; "0" -> "2" [label="b"]; 2 [shape=doublecircle];'))
 
     def testFromChar(self):
-        nf = fromRegex('a')
+        nf = Nfa('a')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; 1 [shape=doublecircle];'))
 
     def testCSet(self):
-        nf = fromRegex('[ab]')
+        nf = Nfa('[ab]')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; "0" -> "1" [label="b"]; 1 [shape=doublecircle];'))
 
     def testEmptyCSet(self):
-        self.assertRaises(Exception, fromRegex, '[]')
+        self.assertRaises(Exception, Nfa, '[]')
         # self.assertEqual(nf.to_dot(),
         #                  digraph_template('"0" -> "1" [label="a"]; "0" -> "1" [label="b"]; 1 [shape=doublecircle];'))
 
     def testBadCounts1(self):
-        self.assertRaises(Exception, fromRegex, '{0}')
+        self.assertRaises(Exception, Nfa, '{0}')
 
     def testBadCounts2(self):
-        self.assertRaises(Exception, fromRegex, '{4,2}')
+        self.assertRaises(Exception, Nfa, '{4,2}')
 
     def testCSetConcat(self):
-        nf = fromRegex('[ab][def]')
+        nf = Nfa('[ab][def]')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; ' +
                                           '"0" -> "1" [label="b"]; ' +
@@ -97,7 +96,7 @@ class TestNfa(unittest.TestCase):
                                           '"1" -> "2" [label="f"]; ' +
                                           '2 [shape=doublecircle];'))
     def testAlt(self):
-        nf = fromRegex('[ab]|[de]')
+        nf = Nfa('[ab]|[de]')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "3" [label="&epsilon;"]; ' + 
@@ -110,23 +109,23 @@ class TestNfa(unittest.TestCase):
                                           '5 [shape=doublecircle];'))
 
     def testFromCharParens(self):
-        nf = fromRegex('(a)')
+        nf = Nfa('(a)')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; 1 [shape=doublecircle];'))
 
     def testConcatChars(self):
-        nf = fromRegex('ab')
+        nf = Nfa('ab')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; "1" -> "2" [label="b"]; 2 [shape=doublecircle];'))
 
     def testConcatCharsParens(self):
-        nf = fromRegex('(a)(b)')
+        nf = Nfa('(a)(b)')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; "1" -> "2" [label="b"]; 2 [shape=doublecircle];'))
 
 
     def testAlt(self):
-        nf = fromRegex('a|b')
+        nf = Nfa('a|b')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "3" [label="&epsilon;"]; ' + 
@@ -137,7 +136,7 @@ class TestNfa(unittest.TestCase):
                                           '5 [shape=doublecircle];'))
 
     def testConcatAlt(self):
-        nf = fromRegex('ab|c')
+        nf = Nfa('ab|c')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "4" [label="&epsilon;"]; ' +
@@ -148,21 +147,21 @@ class TestNfa(unittest.TestCase):
                                           '6 [shape=doublecircle];'))
 
     def testCount(self):
-        nf = fromRegex('a{3}')
+        nf = Nfa('a{3}')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; ' +
                                           '"1" -> "2" [label="a"]; ' +
                                           '"2" -> "3" [label="a"]; ' +
                                           '3 [shape=doublecircle];'))
     def testCountMinMax(self):
-        nf = fromRegex('a{1,2}')
+        nf = Nfa('a{1,2}')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="a"]; ' +
                                           '"1" -> "2" [label="&epsilon;"]; ' +
                                           '"1" -> "2" [label="a"]; ' +
                                           '2 [shape=doublecircle];'))
     def testCountZeroMin(self):
-        nf = fromRegex('a{0,2}')
+        nf = Nfa('a{0,2}')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "2" [label="&epsilon;"]; ' +
                                           '"0" -> "1" [label="a"]; ' +
@@ -171,7 +170,7 @@ class TestNfa(unittest.TestCase):
                                           '2 [shape=doublecircle];'))
 
     def testClosure(self):
-        nf = fromRegex('a*')
+        nf = Nfa('a*')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "3" [label="&epsilon;"]; ' +
@@ -181,7 +180,7 @@ class TestNfa(unittest.TestCase):
                                           '3 [shape=doublecircle];'))
 
     def testConcatClosure(self):
-        nf = fromRegex('(ab)*')
+        nf = Nfa('(ab)*')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "4" [label="&epsilon;"]; ' +
@@ -192,7 +191,7 @@ class TestNfa(unittest.TestCase):
                                           '4 [shape=doublecircle];'))
 
     def testAltClosure(self):
-        nf = fromRegex('a*|b')
+        nf = Nfa('a*|b')
         self.assertEqual(nf.to_dot(),
                          digraph_template('"0" -> "1" [label="&epsilon;"]; ' +
                                           '"0" -> "5" [label="&epsilon;"]; ' + 

@@ -21,11 +21,66 @@
 # The source of the grammar:
 #     http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html
 
+import ply.lex as lex
 import ply.yacc as yacc
-
 from relex import tokens
 
-from nfa import Transition, Nfa
+from collections import namedtuple
+
+# List of token names.   This is always required
+
+tokens = (
+'LPAREN',
+'RPAREN',
+
+'LBRACK',
+'RBRACK',
+
+'LBRACE',
+'RBRACE',
+
+'ASTERIK',
+'PLUS',
+'BAR',
+'NUMBER',
+'COMMA',
+'OPT',
+'OTHER'
+)
+
+# Regular expression rules for simple tokens
+t_LPAREN = '\('
+t_RPAREN = '\)'
+
+t_LBRACK = '\['
+t_RBRACK = '\]'
+
+t_LBRACE = '{'
+t_RBRACE = '}'
+
+t_ASTERIK = '\*'
+t_PLUS = '\+'
+t_BAR = '\|'
+t_COMMA = ','
+t_OPT = '\?'
+
+def t_NUMBER(t):
+    '[0-9]+'
+    return t
+
+def t_OTHER(t):
+    '[^][()|+*{}?, \t]'
+    return t
+
+# A string containing ignored characters (spaces and tabs)
+t_ignore  = ' \t'
+
+# Error handling rule
+def t_error(t):
+    print("Illegal character '{}'".format(t.value[0]))
+    t.lexer.skip(1)
+
+Transition = namedtuple('Transition', 'os, ch, ns')
 
 class ParseTree(object):
     def __init__(self):
@@ -344,28 +399,94 @@ def p_error(p):
     # print("Syntax error in input: {}".format(p))
     pass
 
+# Build the lexer
+lexer = lex.lex()
 
 # Build the parser
 parser = yacc.yacc()
 
-def parse(ins):
-    return parser.parse(ins)
+class Nfa(object):
+    def __init__(self, rxs = None):
+        self.transitions = dict()
+        self.start = 0
+        self.accepting = set()
+        if rxs:
+            pt = parser.parse(rxs)
+            curState = 0
+            ns, newTrans = pt.getTransitions(0)
+            self.addTransitions(newTrans)
+            self.setAccepting(ns)
 
-def fromRegex(rx):
-    pt = parse(rx)
-    nf = Nfa()
-    curState = 0
-    ns, newTrans = pt.getTransitions(0)
-    nf.addTransitions(newTrans)
-    nf.setAccepting(ns)
-    return nf
+    def addTransition(self, tran):
+        self.transitions.update({tran.os: self.transitions.get(tran.os, {})})
+        self.transitions[tran.os].update({tran.ch: self.transitions[tran.os].get(tran.ch, set())})
+        self.transitions[tran.os][tran.ch].update({tran.ns})
+
+    def addTransitions(self, trans):
+        for t in trans:
+            self.addTransition(t)
+
+    def setAccepting(self, st):
+        self.accepting.update({st})
+        
+    def to_dot(self):
+        result = 'digraph { rankdir = LR;'
+        for st in sorted(self.transitions):
+            for chs in sorted(self.transitions[st]):
+                for ns in sorted(self.transitions[st][chs]):
+                    lbl = chs
+                    if lbl == '_eps':
+                        lbl = '&epsilon;'
+                    result += ' "{}" -> "{}" [label="{}"];'.format(st, ns, lbl)
+
+        for st in sorted(self.accepting):
+            result += ' ' + str(st) + ' [shape=doublecircle];'
+
+        result += ' node [shape=plaintext label=""]; nothing->"0"; }'
+        return result
+
+    # Return a set of states accessible from st using only epsilon transitions
+    def e_closure(self, st):
+        if self.transitions.get(st) is None:
+            # This could happen in two cases:
+            #  * st really doesn't exist
+            #  * st is a terminating accept state
+            # Return {st} to simplify handling the second case...
+            return {st}
+
+        ss = {st}
+        nt = set()
+        os = 0
+        ns = len(ss)
+        while os != ns:
+            os = ns
+            for s in ss:
+                nt.update(self.transitions.get(s, {}).get('_eps', set()))
+            ss.update(nt)
+            ns = len(ss)
+        return ss
+
+    # nfa_move is described in Figure 3.31 of section 3.7.1 of the Dragon book
+    def nfa_move(self, sts, ch):
+        new_states = set()
+        for st in sts:
+            tmp = self.transitions.get(st, {}).get(ch, set())
+            for subs in tmp:
+                new_states.update(self.e_closure(subs))
+        return new_states
+
+    # Test whether an Nfa accepts for the given string
+    def matches(self, ins):
+        curs = self.e_closure(self.start)
+        for c in ins:
+            curs = self.nfa_move(curs, c)
+        return len(curs.intersection(self.accepting))>0
 
 def re_match(rx, ins):
-    nf = fromRegex(rx)
-    return nf.matches(ins)
+    return Nfa(rx).matches(ins)
 
-    
 def main():
+    print(Nfa('abc(ab|cd*)*def').to_dot())
     return
 
 if __name__=="__main__":
