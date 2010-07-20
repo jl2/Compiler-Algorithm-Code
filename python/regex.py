@@ -23,8 +23,6 @@
 
 import ply.lex as lex
 import ply.yacc as yacc
-from relex import tokens
-
 from collections import namedtuple
 
 # List of token names.   This is always required
