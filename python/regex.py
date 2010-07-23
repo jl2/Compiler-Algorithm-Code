@@ -401,6 +401,52 @@ lexer = lex.lex()
 # Build the parser
 parser = yacc.yacc()
 
+class Dfa(object):
+    def __init__(self, rx = None):
+        if rx:
+            # I have my doubts whether or not this is a good practice...
+            tmp = Nfa(rx).to_dfa()
+            self.transitions = tmp.transitions
+            self.accepting = tmp.accepting
+            self.start = tmp.start
+        else:
+            self.transitions = dict()
+            self.start = 0
+            self.accepting = set()
+
+    def addTransition(self, tran):
+        # Add empty dictionary if it's not there
+        self.transitions.update({tran.os: self.transitions.get(tran.os, {})})
+
+        # Add the transition
+        self.transitions[tran.os][tran.ch] = tran.ns
+
+    def addAcceptState(self, st):
+        self.accepting.add(st)
+
+    # Test whether an Dfa accepts for the given string
+    def matches(self, ins):
+        curs = self.start
+        for c in ins:
+            if c in self.transitions[curs]:
+                curs = self.transitions[curs][c]
+            else:
+                return False
+
+        return len(self.accepting.intersection({curs}))>0
+
+    def to_dot(self):
+        result = 'digraph { rankdir = LR;'
+        for st in sorted(self.transitions):
+            for chs in sorted(self.transitions[st]):
+                result += ' "{}" -> "{}" [label="{}"];'.format(st, self.transitions[st][chs], chs)
+
+        for st in sorted(self.accepting):
+            result += ' ' + str(st) + ' [shape=doublecircle];'
+
+        result += ' node [shape=plaintext label=""]; nothing->"0"; }'
+        return result
+
 class Nfa(object):
     def __init__(self, rxs = None):
         self.transitions = dict()
@@ -423,7 +469,7 @@ class Nfa(object):
             self.addTransition(t)
 
     def setAccepting(self, st):
-        self.accepting.update({st})
+        self.accepting.update(self.e_closure(st))
         
     def to_dot(self):
         result = 'digraph { rankdir = LR;'
@@ -478,11 +524,66 @@ class Nfa(object):
             curs = self.move(curs, c)
         return len(curs.intersection(self.accepting))>0
 
-def re_match(rx, ins):
+    def get_alphabet(self):
+        alphabet = {'_eps'}
+        for k in self.transitions.values():
+            alphabet = alphabet.union(set(k.keys()))
+        alphabet.remove('_eps')
+        return alphabet
+
+    def state_id(self, states, ss):
+        ns = len(states)
+        try:
+            sid = states.index(ss)
+        except ValueError as nf:
+            sid = len(states)
+            states.append(ss)
+        return sid
+
+    def to_dfa(self):
+        df = Dfa()
+
+        alphabet = self.get_alphabet()
+
+        states = []
+
+        unmarked_states = set()
+        marked_states = set()
+
+        ns = 0
+        nss = self.e_closure(self.start)
+        cs = self.state_id(states, nss)
+        unmarked_states.add(cs)
+
+        if len(self.accepting.intersection(nss))>0:
+            df.addAcceptState(ns)
+
+        while len(unmarked_states) > 0:
+            cs = unmarked_states.pop()
+            for cur_char in alphabet:
+                nss = self.move(states[cs], cur_char)
+                ns = self.state_id(states, nss)
+
+                df.addTransition(Transition(cs, cur_char, ns))
+
+                if ns not in marked_states:
+                    unmarked_states.add(ns)
+
+                if len(self.accepting.intersection(nss))>0:
+                    df.addAcceptState(ns)
+            marked_states.add(cs)
+        return df
+
+
+def re_match(rx, ins, use_dfa=False):
+    if use_dfa:
+        return Dfa(rx).matches(ins)
     return Nfa(rx).matches(ins)
 
 def main():
-    print(Nfa('abc(ab|cd*)*def').to_dot())
+    # print(Nfa('abc(ab|cd*)*def').to_dfa().to_dot())
+    # print(Nfa('(a|b)*abb').to_dfa().to_dot())
+    print(Dfa('a{0,3}').to_dot())
     return
 
 if __name__=="__main__":

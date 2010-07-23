@@ -230,11 +230,11 @@ class TestNfa(unittest.TestCase):
 
         self.assertEqual(nf.move({0}, 'a'), {1,2})
 
-    def testMatch01(self):
+    def testMatchNfa01(self):
         self.assertTrue(re_match('abc|def', 'abc'))
         self.assertFalse(re_match('abc|def', 'abd'))
 
-    def testMatch02(self):
+    def testMatchNfa02(self):
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abcdef'))
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abccddef'))
         self.assertTrue(re_match('abc(ab|cd*)*def', 'abccdcddef'))
@@ -244,7 +244,7 @@ class TestNfa(unittest.TestCase):
         self.assertFalse(re_match('abc(ab|cd*)*def', 'abcababcdabceddef'))
         self.assertFalse(re_match('abc(ab|cd*)*def', 'abc'))
     
-    def testMatch03(self):
+    def testMatchNfa03(self):
         self.assertTrue(re_match('(abc+)+', 'abc'))
         self.assertTrue(re_match('(abc+)+', 'abccc'))
         self.assertTrue(re_match('(abc+)+', 'abcccabcc'))
@@ -252,10 +252,10 @@ class TestNfa(unittest.TestCase):
 
         self.assertFalse(re_match('(abc+)+', 'abcccabccab'))
                         
-    def testMatch04(self):
+    def testMatchNfa04(self):
         self.assertTrue(re_match('[a-z]+', 'abcdefg'))
 
-    def testMatch05(self):
+    def testMatchNfa05(self):
         self.assertTrue(re_match('[a-z]+|[0-9]+', 'abcdefg'))
         self.assertTrue(re_match('[:alpha:]+|[:digit:]+', '432'))
         self.assertTrue(re_match('[a-z]+|[0-9]+', '1'))
@@ -263,41 +263,41 @@ class TestNfa(unittest.TestCase):
         
         self.assertFalse(re_match('[a-z]+|[0-9]+', '(432)'))
 
-    def testMatch06(self):
+    def testMatchNfa06(self):
         self.assertTrue(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-303-1234'))
         self.assertFalse(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-3031-1234'))
 
-    def testMatch07(self):
+    def testMatchNfa07(self):
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-1234'))
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-123-1234'))
         self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-1234'))
         self.assertFalse(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '1234'))
 
-    def testMatch08(self):
+    def testMatchNfa08(self):
         self.assertTrue(re_match('(abc*)+', 'ab'))
 
-    def testMatch09(self):
+    def testMatchNfa09(self):
         self.assertTrue(re_match('(abc){3}', 'abcabcabc'))
         self.assertFalse(re_match('(abc){3}', 'abcabc'))
         self.assertFalse(re_match('(abc){3}', 'abcabcabcabc'))
 
-    def testMatch10(self):
+    def testMatchNfa10(self):
         self.assertFalse(re_match('a{2,3}', 'a'))
         self.assertTrue(re_match('a{2,3}', 'aa'))
         self.assertTrue(re_match('a{2,3}', 'aaa'))
         self.assertFalse(re_match('a{2,3}', 'aaaa'))
         
-    def testMatch11(self):
+    def testMatchNfa11(self):
         self.assertTrue(re_match('a{0,3}', ''))
         self.assertTrue(re_match('a{0,3}', 'a'))
         self.assertTrue(re_match('a{0,3}', 'aa'))
         self.assertTrue(re_match('a{0,3}', 'aaa'))
         self.assertFalse(re_match('a{0,3}', 'aaaa'))
 
-    def testMatch12(self):
+    def testMatchNfa12(self):
         self.assertTrue(re_match('([0-9]{3}-){2}[0-9]{4}', '720-303-1234'))
 
-    def testMatch13(self):
+    def testMatchNfa13(self):
         self.assertTrue(re_match('([0-9]{3,4}-?){3}[0-9]', '720-303-1234'))
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '720-303-1234'))
         self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234'))
@@ -308,6 +308,108 @@ class TestNfa(unittest.TestCase):
         self.assertTrue(re_match('▰', '▰'))
         self.assertTrue(re_match('▰+▣▰', '▰▰▣▰'))
         self.assertTrue(re_match('([◯-◿])+', '◯◺◯◿◯'))
+
+    def testAlphabet(self):
+        nf = Nfa('[:digit:]*')
+        self.assertEqual(nf.get_alphabet(), set(str(x) for x in range(10)))
+
+    def testNextState(self):
+        nf = Nfa('bob')
+        states = []
+
+        nid = nf.state_id(states, {3,4})
+        self.assertEqual(nid, 0)
+
+        nid = nf.state_id(states, {4})
+        self.assertEqual(nid, 1)
+
+        nid = nf.state_id(states, {1,2,3})
+        self.assertEqual(nid, 2)
+
+        self.assertEqual(states, [{3,4}, {4}, {1,2,3}])
+
+    def testDfaMatch01(self):
+        df = Dfa('a|b')
+        self.assertTrue(df.matches('a'))
+
+    def testMatchDfa01(self):
+        self.assertTrue(re_match('abc|def', 'abc', True) )
+        self.assertFalse(re_match('abc|def', 'abd', True) )
+
+    def testMatchDfa02(self):
+        self.assertTrue(re_match('abc(ab|cd*)*def', 'abcdef', True) )
+        self.assertTrue(re_match('abc(ab|cd*)*def', 'abccddef', True) )
+        self.assertTrue(re_match('abc(ab|cd*)*def', 'abccdcddef', True) )
+        self.assertTrue(re_match('abc(ab|cd*)*def', 'abccdabcddef', True) )
+        self.assertTrue(re_match('abc(ab|cd*)*def', 'abcababcdabcddef', True) )
+
+        self.assertFalse(re_match('abc(ab|cd*)*def', 'abcababcdabceddef', True) )
+        self.assertFalse(re_match('abc(ab|cd*)*def', 'abc', True) )
     
+    def testMatchDfa03(self):
+        self.assertTrue(re_match('(abc+)+', 'abc', True) )
+        self.assertTrue(re_match('(abc+)+', 'abccc', True) )
+        self.assertTrue(re_match('(abc+)+', 'abcccabcc', True) )
+        self.assertTrue(re_match('(abc+)+', 'abcccabccabc', True) )
+
+        self.assertFalse(re_match('(abc+)+', 'abcccabccab', True) )
+                        
+    def testMatchDfa04(self):
+        self.assertTrue(re_match('[a-z]+', 'abcdefg', True) )
+
+    def testMatchDfa05(self):
+        self.assertTrue(re_match('[a-z]+|[0-9]+', 'abcdefg', True) )
+        self.assertTrue(re_match('[:alpha:]+|[:digit:]+', '432', True) )
+        self.assertTrue(re_match('[a-z]+|[0-9]+', '1', True) )
+        self.assertTrue(re_match('[:alnum:]+|[0-9]+', 'a', True) )
+        
+        self.assertFalse(re_match('[a-z]+|[0-9]+', '(432)', True) )
+
+    def testMatchDfa06(self):
+        self.assertTrue(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-303-1234', True) )
+        self.assertFalse(re_match('[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]', '720-3031-1234', True) )
+
+    def testMatchDfa07(self):
+        self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-1234', True) )
+        self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-303-123-1234', True) )
+        self.assertTrue(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '720-1234', True) )
+        self.assertFalse(re_match('([0-9][0-9][0-9]-)+[0-9][0-9][0-9][0-9]', '1234', True) )
+
+    def testMatchDfa08(self):
+        self.assertTrue(re_match('(abc*)+', 'ab', True) )
+
+    def testMatchDfa09(self):
+        self.assertTrue(re_match('(abc){3}', 'abcabcabc', True) )
+        self.assertFalse(re_match('(abc){3}', 'abcabc', True) )
+        self.assertFalse(re_match('(abc){3}', 'abcabcabcabc', True) )
+
+    def testMatchDfa10(self):
+        self.assertFalse(re_match('a{2,3}', 'a', True) )
+        self.assertTrue(re_match('a{2,3}', 'aa', True) )
+        self.assertTrue(re_match('a{2,3}', 'aaa', True) )
+        self.assertFalse(re_match('a{2,3}', 'aaaa', True) )
+        
+    def testMatchDfa11(self):
+        self.assertTrue(re_match('a{0,3}', '', True) )
+        self.assertTrue(re_match('a{0,3}', 'a', True) )
+        self.assertTrue(re_match('a{0,3}', 'aa', True) )
+        self.assertTrue(re_match('a{0,3}', 'aaa', True) )
+        self.assertFalse(re_match('a{0,3}', 'aaaa', True) )
+
+    def testMatchDfa12(self):
+        self.assertTrue(re_match('([0-9]{3}-){2}[0-9]{4}', '720-303-1234', True) )
+
+    def testMatchDfa13(self):
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}[0-9]', '720-303-1234', True) )
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}', '720-303-1234', True) )
+        self.assertTrue(re_match('([0-9]{3,4}-?){3}', '7203031234', True) )
+        self.assertTrue(re_match('([:digit:]{3,4}-?){3}', '7203031234', True) )
+        self.assertFalse(re_match('([0-9]{3,4}-?){3}', '720303a1234', True) )
+
+    def testUnicodeMatchDfa(self):
+        self.assertTrue(re_match('▰', '▰', True) )
+        self.assertTrue(re_match('▰+▣▰', '▰▰▣▰', True) )
+        self.assertTrue(re_match('([◯-◿])+', '◯◺◯◿◯', True) )
+
 if __name__=='__main__':
     unittest.main()
