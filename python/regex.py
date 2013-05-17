@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # regex.py
 
@@ -39,6 +39,7 @@ tokens = (
     'BAR',
     'NUMBER',
     'COMMA',
+    'COLON',
     'OPT',
     'OTHER'
 )
@@ -58,13 +59,14 @@ t_PLUS = '\+'
 t_BAR = '\|'
 t_COMMA = ','
 t_OPT = '\?'
+t_COLON = ':'
 
 def t_NUMBER(t):
     '[0-9]+'
     return t
 
 def t_OTHER(t):
-    '[^][()|+*{}?, \t]'
+    '[^][()|+*{}?:, \t]'
     return t
 
 # A string containing ignored characters (spaces and tabs)
@@ -208,6 +210,7 @@ class PTCharSet(ParseTree):
         if named_csets.get(cset_str):
             cset_str = named_csets[cset_str]
         i = 0
+        # print('cset_str = {}'.format(cset_str))
         while (i<len(cset_str)):
             if i==0 and cset_str[i]=='-':
                 self.cset.add('-')
@@ -361,11 +364,20 @@ def p_char(p):
     debug_p('  .', p)
    
 def p_cset(p):
-    ''' cset : LBRACK setitems RBRACK
+    ''' cset : LBRACK class_or_setitems RBRACK
     '''
     debug_p('[', p)
     p[0] = PTCharSet(p[2])
     debug_p('  ]', p)
+
+def p_class_or_setitems(p):
+    ''' class_or_setitems : COLON name COLON
+                          | setitems
+    '''
+    if len(p)>2:
+        p[0] = ':' + p[2] + ':'
+    else:
+        p[0] = p[1]
 
 def p_setitems(p):
     ''' setitems : setitem
@@ -388,6 +400,16 @@ def p_setitem(p):
     debug_p('si2', p)
     p[0] = p[1]
     debug_p('  si2', p)
+
+def p_name(p):
+    ''' name : OTHER
+            | OTHER name
+    '''
+    if len(p)>2:
+        p[0] = p[1] + p[2]
+    else:
+        p[0] = p[1]
+
 
 # Error rule for syntax errors
 def p_error(p):
@@ -583,7 +605,11 @@ def re_match(rx, ins, use_dfa=False):
 def main():
     # print(Nfa('abc(ab|cd*)*def').to_dfa().to_dot())
     # print(Nfa('(a|b)*abb').to_dfa().to_dot())
-    print(Dfa('a{0,3}').to_dot())
+    # print(Dfa('a{0,3}').to_dot())
+    # print(Dfa('(a|b)*abb').to_dot())
+    # print(Nfa('(a|b)*abb').to_dfa().to_dot())
+    # print(Nfa('[0123456789]{3}-[0123456789]{3}-[0123456789]{4}').to_dot())
+    print(Dfa('([:digit:]{3}-){1,2}[:digit:]{4}').to_dot())
     return
 
 if __name__=="__main__":
