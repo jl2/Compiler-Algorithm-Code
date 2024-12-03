@@ -212,9 +212,9 @@ nfaToDot fa = let
                            
         where
           rest = 
-              (Map.foldWithKey
+              (Map.foldrWithKey
                       (\k x ac ->  
-                           (Map.foldWithKey
+                           (Map.foldrWithKey
                                    (\k2 y ad -> ad ++
                                                 (Set.fold
                                                         (\sx sa -> sa ++ (show k)
@@ -244,9 +244,9 @@ dfaToDot fa = let
                            
         where
           rest = 
-              (Map.foldWithKey
+              (Map.foldrWithKey
                       (\k x ac ->  
-                           (Map.foldWithKey
+                           (Map.foldrWithKey
                                    (\k2 y ad -> ad ++(show k) ++ "->" ++ (show y) ++ " [label=\"" ++ (show k2) ++"\"];\n")
                                    "" x) : ac)
                [] (d_transitions fa))
@@ -324,7 +324,7 @@ removeNullState st fa =
       comesFrom = Set.fromList  -- Things with epsilon transitions to st
                   (Map.keys
                    (Map.filter
-                           (\x -> Map.foldWithKey
+                           (\x -> Map.foldrWithKey
                                   (\k y acc -> ((k==Epsilon && (Set.member st y)) || acc))
                                   False x
                            )
@@ -407,7 +407,7 @@ toDfa nfa =
                                       inSyms
                               )
                       ))
-      inSyms = Set.delete Epsilon (Set.fromList (Map.fold (\x acc -> acc ++ Map.keys x) [] (n_transitions nfa)))
+      inSyms = Set.delete Epsilon (Set.fromList (Map.foldr (\x acc -> acc ++ Map.keys x) [] (n_transitions nfa)))
 
 -- minimize_dfa :: Dfa -> ([NfaChar],Set.Set StateSet)
 -- minimize_dfa dfa =
